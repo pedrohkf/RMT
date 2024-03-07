@@ -1,0 +1,23 @@
+.header{
+    display: flex;
+    justify-content: center;
+    background-color: darkgrey;
+    width: 100%;
+    position: fixed;
+    z-index: 100;
+    padding: 0.5rem 0;
+    top: 1rem;
+}
+
+.nav{
+    display: flex;
+    background-color: beige;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav a{
+    text-decoration: none;
+    color: black;
+}
