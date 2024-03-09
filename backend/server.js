@@ -8,6 +8,8 @@ const jwt = require('jsonwebtoken');
 const app = express();
 app.use(cors());
 
+const secret = process.env.SECRET
+
 const db = mysql.createConnection({
     host: "localhost",
     user: "root",
@@ -30,6 +32,16 @@ app.get('/', (re, res) => {
     return res.json("From Backend");
 })
 
+function verifyJWT(req, res, next) {
+    const token = req.headers['x-access-token'];
+    jwt.verify(token, secret, (err, decode) => {
+        if (err) return res.status(401).end();
+
+        req.username = decode.username;
+        next();
+    })
+}
+
 app.post('/user/register', async (req, res) => {
     const { username, email, password, confirmpassword } = req.body;
 
@@ -37,7 +49,7 @@ app.post('/user/register', async (req, res) => {
     db.query(user, (err, data) => {
         if (err) return res.status(500).json(err);
 
-        if (data.length > 0) { 
+        if (data.length > 0) {
             return res.json('Já existe, ultilize outro nome');
         }
     })
@@ -46,7 +58,7 @@ app.post('/user/register', async (req, res) => {
     db.query(emails, (err, data) => {
         if (err) return res.status(500).json(err);
 
-        if (data.length > 0) { 
+        if (data.length > 0) {
             return res.json('Já existe, ultilize outro email');
         }
     })
@@ -76,19 +88,20 @@ app.post('/user/register', async (req, res) => {
     const createUser = `INSERT INTO users (username, email, password, level, coin) VALUES ('${username}', '${email}', '${passwordHash}', 1, 0)`;
     db.query(createUser, (err, data) => {
         if (err) return res.json(err);
-        return res.status(201).json({msg: "Usuário criado com sucesso!"});
+        return res.status(201).json({ msg: "Usuário criado com sucesso!" });
     })
 })
 
 
 app.post('/user/login', async (req, res) => {
+    console.log(req.username + 'fez esta chamada!')
     const { username, password } = req.body;
 
     const user = `SELECT * FROM users WHERE username = "${username}";`
     db.query(user, (err, data) => {
         if (err) return res.status(500).json(err);
 
-        if (data.length > 0) { 
+        if (data.length > 0) {
             return res.json('Logado com sucesso!');
         }
     })
@@ -97,25 +110,23 @@ app.post('/user/login', async (req, res) => {
     db.query(checkPassword, (err, data) => {
         if (err) return res.status(500).json(err);
 
-        if (data.length > 0) { 
+        if (data.length > 0) {
             return res.json('Logado com sucesso!');
         }
     })
 
-    const secret = process.env.SECRET
-
     const token = jwt.sign(
         {
             username: username,
-        },
-        secret,
+        }, secret, { expiresIn: 300 }
     )
 
-    console.log(token);
-
-    res.status(200).json({msg: "Usuário logado com sucesso!", token})
+    res.status(200).json({
+        msg: "Usuário logado com sucesso!", data: {
+            token
+        }
+    })
 })
-
 
 
 app.listen(8081, () => {
